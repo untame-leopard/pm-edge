@@ -32,7 +32,7 @@ EXCLUDE_KEYWORDS = [
 # Categories where research has a real chance of beating the price. Matches get a score boost
 # so they rise to the top. Add categories here as your bet log shows where you're good.
 PRIORITY_KEYWORDS = ["box office", "will trump say", " say \"", "views", "mrbeast", "rotten tomatoes",
-                     "metacritic", "billboard", "spotify", "tweet", "mention", "earnings"]
+                     "metacritic", "billboard", "spotify", "tweet", "mention"]
 PRIORITY_BOOST = 2.0
 
 # Category-specific research hints, added to the prompt when the keyword appears in the question
