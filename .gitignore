@@ -1,0 +1,7 @@
+*.db
+*.db-journal
+.env
+.venv/
+__pycache__/
+prompts/
+candidates.md
