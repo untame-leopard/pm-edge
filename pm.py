@@ -285,10 +285,14 @@ Do NOT look up or consider the current Polymarket price or any other betting odd
 ## Output (exactly this format)
 1. **Resolution check:** In one or two sentences, what exactly has to happen for each outcome, per the rules above. Flag any ambiguity.
 2. **Key evidence:** 3–7 bullets, each starting with its tier tag [T1]/[T2]/[T3], then source name, date, and link.
-3. **Base rate:** What's the historical frequency for comparable situations, and how did you get it?
-4. **Probabilities:** One line per outcome, e.g. `Yes: 0.72`. They must sum to 1.
-5. **Confidence:** low / medium / high, with one sentence why.
-6. **What would make this wrong:** The single most likely way your estimate fails.
+3. **Base rate:** Define the reference class, list the cases, and give the count, e.g. "4 of 12 = 0.33". Use only cases you can actually cite.
+4. **Adjustments:** Start from the base rate. List each adjustment as a signed number of percentage points with a one-line reason
+   (e.g. `-5pt: Thursday previews inflate the opening`). Keep each adjustment small unless the evidence is T1 and decisive.
+   Final = base rate + sum of adjustments. Show the arithmetic. Do not change the number after this step.
+5. **Probabilities:** One line per outcome, e.g. `Yes: 0.72`. They must sum to 1 and match step 4 exactly.
+   If this market is one bucket of a multi-bucket event (ranges like 10-12M, 30-35M), also give a full probability distribution across all buckets.
+6. **Confidence:** low / medium / high, with one sentence why.
+7. **What would make this wrong:** The single most likely way your estimate fails.
 """
 
 
