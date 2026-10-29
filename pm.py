@@ -275,11 +275,16 @@ PROMPT = """You are an expert forecaster. Research this prediction market questi
 ## What to research
 {hints}
 Search for the most recent, primary sources. Note the publication date of everything you cite.
+Label every piece of evidence with its source tier and weight it accordingly:
+  [T1] primary/official data (e.g. The Numbers, Box Office Mojo, official transcripts, company filings, the platform itself)
+  [T2] professional trade press / analysts (e.g. Deadline, Variety, Boxoffice Pro, Reuters)
+  [T3] unofficial: forums, Reddit, social media, blogs, aggregators of unknown method
+Base your probabilities on T1/T2. Use T3 only as weak supporting evidence, and say explicitly if any key number is T3-only.
 Do NOT look up or consider the current Polymarket price or any other betting odds — I need an independent estimate.
 
 ## Output (exactly this format)
 1. **Resolution check:** In one or two sentences, what exactly has to happen for each outcome, per the rules above. Flag any ambiguity.
-2. **Key evidence:** 3–7 bullets, each with source name, date, and link.
+2. **Key evidence:** 3–7 bullets, each starting with its tier tag [T1]/[T2]/[T3], then source name, date, and link.
 3. **Base rate:** What's the historical frequency for comparable situations, and how did you get it?
 4. **Probabilities:** One line per outcome, e.g. `Yes: 0.72`. They must sum to 1.
 5. **Confidence:** low / medium / high, with one sentence why.
