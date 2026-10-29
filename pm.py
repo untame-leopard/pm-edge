@@ -286,6 +286,8 @@ Do NOT look up or consider the current Polymarket price or any other betting odd
 1. **Resolution check:** In one or two sentences, what exactly has to happen for each outcome, per the rules above. Flag any ambiguity.
 2. **Key evidence:** 3–7 bullets, each starting with its tier tag [T1]/[T2]/[T3], then source name, date, and link.
 3. **Base rate:** Define the reference class, list the cases, and give the count, e.g. "4 of 12 = 0.33". Use only cases you can actually cite.
+   The reference class must match the situation being forecast (same kind of event, setting and format). If your cases
+   mix types (e.g. themed policy events vs campaign rallies), split them and use only the subset that matches.
 4. **Adjustments:** Start from the base rate. List each adjustment as a signed number of percentage points with a one-line reason
    (e.g. `-5pt: Thursday previews inflate the opening`). Keep each adjustment small unless the evidence is T1 and decisive.
    Final = base rate + sum of adjustments. Show the arithmetic. Do not change the number after this step.
