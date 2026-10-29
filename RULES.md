@@ -1,0 +1,1 @@
+- Verify the 1-2 numbers the AI's estimate hinges on at the primary source before betting
