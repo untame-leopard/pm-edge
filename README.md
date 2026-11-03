@@ -23,7 +23,7 @@ python pm.py stats                # hit rate, ROI, Brier: you vs AI vs market
 
 ## Run the scanner hourly (Windows)
 Task Scheduler → Create Basic Task → Daily → Action "Start a program":
-- Program: `python` (or the full path from `where python`)
+- Program: `pythonw` (or the full path from `where python`)
 - Arguments: `pm.py scan`
 - Start in: this folder
 
