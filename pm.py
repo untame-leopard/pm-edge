@@ -7,9 +7,10 @@ Commands:
   python pm.py scan                      pull all active markets into SQLite (run hourly)
   python pm.py candidates                rank thin/stale markets worth researching
   python pm.py prompt <slug>             write a research prompt to prompts/<slug>.md
-  python pm.py log --slug ... (see -h)   record a bet
-  python pm.py resolve                   settle bets whose markets have closed
-  python pm.py stats                     P&L, hit rate, Brier scores, calibration
+  python pm.py log --slug ... (see -h)   record a bet (also records it as a forecast)
+  python pm.py forecast --slug ...       record a forecast you SKIPPED (every researched market)
+  python pm.py resolve                   (also settles forecasts)
+  python pm.py stats                     P&L, hit rate, Brier scores, calibration (bets + all forecasts)
 """
 import argparse
 import json
@@ -77,6 +78,11 @@ def db():
         id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, slug TEXT, question TEXT,
         outcome TEXT, price REAL, stake REAL, my_prob REAL, ai_prob REAL,
         reason TEXT, result TEXT, pnl REAL, resolved_ts TEXT
+    );
+    CREATE TABLE IF NOT EXISTS forecasts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, slug TEXT, question TEXT,
+        outcome TEXT, mkt_price REAL, my_prob REAL, ai_prob REAL, ai_base REAL,
+        bet INTEGER DEFAULT 0, reason TEXT, result INTEGER, resolved_ts TEXT
     );
     """)
     return con
@@ -230,7 +236,8 @@ def cmd_candidates(args):
         if any(k in q.lower() for k in C.PRIORITY_KEYWORDS):
             score += C.PRIORITY_BOOST
         out.append(dict(score=score, slug=r["slug"], q=q, days=days, liq=liq, vol=vol,
-                        move=move, cheap=cheap, age=age_days, event=r["event_title"] or r["slug"]))
+                        move=move, cheap=cheap, age=age_days, event=r["event_title"] or r["slug"],
+                        spread=r["spread"]))
 
     # Multi-outcome events (e.g. temperature buckets) are split into many binary markets.
     # Keep at most MAX_PER_EVENT per event so one event can't flood the list.
@@ -242,15 +249,16 @@ def cmd_candidates(args):
             kept.append(d)
     out = kept[: args.n]
     lines = [f"# Candidates — {latest[:16]} UTC", "",
-             "| # | score | market | ends (d) | liq $ | vol $ | 48h move | cheap side |",
-             "|---|---|---|---|---|---|---|---|"]
+             "| # | score | market | ends (d) | liq $ | vol $ | 48h move | spread | cheap side |",
+             "|---|---|---|---|---|---|---|---|---|"]
     for i, d in enumerate(out, 1):
         mv = "n/a" if d["move"] is None else f"{d['move']*100:.0f}pt"
         cheap = ", ".join(f"{o} {p*100:.0f}¢" for o, p in d["cheap"])
+        sp = "n/a" if d["spread"] is None else f"{d['spread']*100:.0f}¢" + (" DEAD BOOK" if d["spread"] >= C.DEAD_SPREAD else "")
         lines.append(f"| {i} | {d['score']:.2f} | [{d['q'][:70]}](https://polymarket.com/market/{d['slug']}) "
-                     f"| {d['days']:.1f} | {d['liq']:,.0f} | {d['vol']:,.0f} | {mv} | {cheap} |")
+                     f"| {d['days']:.1f} | {d['liq']:,.0f} | {d['vol']:,.0f} | {mv} | {sp} | {cheap} |")
         print(f"{i:>2}. [{d['score']:.2f}] {d['q'][:80]}\n    {d['slug']} | ends {d['days']:.1f}d | "
-              f"liq ${d['liq']:,.0f} | vol ${d['vol']:,.0f} | 48h move {mv} | {cheap}")
+              f"liq ${d['liq']:,.0f} | vol ${d['vol']:,.0f} | 48h move {mv} | spread {sp} | {cheap}")
     with open("candidates.md", "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
     print(f"\nFilter funnel: {len(rows)} markets in latest scan")
@@ -328,9 +336,42 @@ def cmd_log(args):
                    VALUES (?,?,?,?,?,?,?,?,?)""",
                 (now_utc().isoformat(), args.slug, r["question"] if r else None, args.outcome,
                  args.price, args.stake, args.prob, args.ai_prob, args.reason))
+    _add_forecast(con, args, bet=1)
     con.commit()
     edge = (args.prob - args.price) * 100
     print(f"Logged: {args.outcome} @ {args.price*100:.0f}¢, stake {args.stake}, your p={args.prob:.2f} (edge {edge:+.0f}pt)")
+
+
+def _add_forecast(con, args, bet):
+    r = con.execute("SELECT question FROM markets WHERE slug=?", (args.slug,)).fetchone()
+    con.execute("""INSERT INTO forecasts (ts, slug, question, outcome, mkt_price, my_prob, ai_prob, ai_base, bet, reason)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                (now_utc().isoformat(), args.slug, r["question"] if r else None, args.outcome, args.price,
+                 args.prob, args.ai_prob, getattr(args, "ai_base", None), bet, args.reason))
+
+
+def cmd_forecast(args):
+    """Record a market you researched but did NOT bet on. Same numbers as `log`, no stake."""
+    con = db()
+    _add_forecast(con, args, bet=0)
+    con.commit()
+    edge = (args.prob - args.price) * 100
+    print(f"Forecast logged (skip): {args.outcome} mkt {args.price*100:.0f}¢, your p={args.prob:.2f} (edge {edge:+.0f}pt)")
+
+
+def market_winner(slug):
+    """Returns the winning outcome name, None if not resolved yet, or '?' if not found."""
+    data = get("/markets", {"slug": slug})
+    if not data:
+        return "?"
+    m = data[0]
+    if not m.get("closed"):
+        return None
+    outcomes = jlist(m.get("outcomes"))
+    prices = [fnum(p) for p in jlist(m.get("outcomePrices"))]
+    if not prices or max(prices) < 0.99:
+        return None
+    return outcomes[prices.index(max(prices))]
 
 
 def cmd_resolve(_args):
@@ -355,6 +396,16 @@ def cmd_resolve(_args):
         con.execute("UPDATE bets SET result=?, pnl=?, resolved_ts=? WHERE id=?",
                     ("win" if won else "loss", pnl, now_utc().isoformat(), b["id"]))
         print(f"{'WIN ' if won else 'LOSS'} {pnl:+.2f}  {b['question'] or b['slug']}")
+    for fc in con.execute("SELECT * FROM forecasts WHERE result IS NULL").fetchall():
+        w = market_winner(fc["slug"])
+        if w == "?":
+            print(f"? forecast {fc['slug']}: not found")
+            continue
+        if w is None:
+            continue
+        hit = int(w.lower() == (fc["outcome"] or "").lower())
+        con.execute("UPDATE forecasts SET result=?, resolved_ts=? WHERE id=?", (hit, now_utc().isoformat(), fc["id"]))
+        print(f"forecast {'HIT ' if hit else 'MISS'} p={fc['my_prob']:.2f} mkt={fc['mkt_price']:.2f}  {fc['question'] or fc['slug']}")
     con.commit()
 
 
@@ -362,8 +413,36 @@ def brier(pairs):
     return sum((p - y) ** 2 for p, y in pairs) / len(pairs) if pairs else None
 
 
+def forecast_stats(con):
+    rows = con.execute("SELECT * FROM forecasts WHERE result IS NOT NULL").fetchall()
+    n_open = con.execute("SELECT COUNT(*) c FROM forecasts WHERE result IS NULL").fetchone()["c"]
+    print(f"=== Forecasts (every researched market, bet or skip) ===")
+    print(f"Resolved: {len(rows)}  (open: {n_open})")
+    if not rows:
+        return
+    def line(label, sub):
+        if not sub:
+            return
+        y = [r["result"] for r in sub]
+        out = f"  {label:<10} n={len(sub):<3} market {brier([(r['mkt_price'], t) for r, t in zip(sub, y)]):.4f}" \
+              f"  you {brier([(r['my_prob'], t) for r, t in zip(sub, y)]):.4f}"
+        ai = [(r["ai_prob"], r["result"]) for r in sub if r["ai_prob"] is not None]
+        base = [(r["ai_base"], r["result"]) for r in sub if r["ai_base"] is not None]
+        if ai:
+            out += f"  AI {brier(ai):.4f} (n={len(ai)})"
+        if base:
+            out += f"  AI-base {brier(base):.4f} (n={len(base)})"
+        print(out)
+    print("Brier (lower = better):")
+    line("all", rows)
+    line("bets", [r for r in rows if r["bet"]])
+    line("skips", [r for r in rows if not r["bet"]])
+    print()
+
+
 def cmd_stats(_args):
     con = db()
+    forecast_stats(con)
     bets = con.execute("SELECT * FROM bets WHERE result IS NOT NULL").fetchall()
     n_open = con.execute("SELECT COUNT(*) c FROM bets WHERE result IS NULL").fetchone()["c"]
     if not bets:
@@ -404,8 +483,18 @@ def main():
     l.add_argument("--stake", type=float, required=True)
     l.add_argument("--prob", type=float, required=True, help="YOUR final probability for that outcome")
     l.add_argument("--ai-prob", type=float, default=None, help="the AI's probability for that outcome")
+    l.add_argument("--ai-base", type=float, default=None, help="the AI's base rate (before its adjustments)")
     l.add_argument("--reason", default="")
     l.set_defaults(f=cmd_log)
+    fc = sub.add_parser("forecast", help="record a market you researched but skipped")
+    fc.add_argument("--slug", required=True)
+    fc.add_argument("--outcome", default="Yes", help='outcome your probabilities refer to (default "Yes")')
+    fc.add_argument("--price", type=float, required=True, help="market ask for that outcome, 0-1")
+    fc.add_argument("--prob", type=float, required=True, help="YOUR probability for that outcome")
+    fc.add_argument("--ai-prob", type=float, default=None, help="the AI's final probability")
+    fc.add_argument("--ai-base", type=float, default=None, help="the AI's base rate (before its adjustments)")
+    fc.add_argument("--reason", default="")
+    fc.set_defaults(f=cmd_forecast)
     sub.add_parser("resolve").set_defaults(f=cmd_resolve)
     sub.add_parser("stats").set_defaults(f=cmd_stats)
     args = ap.parse_args()

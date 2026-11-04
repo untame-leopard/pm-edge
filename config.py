@@ -14,6 +14,7 @@ PRICE_HI = 0.40            # cheap enough that being right pays well
 STALE_HOURS = 48           # "nobody's looking" = price barely moved in this window
 TOP_N = 25
 MAX_PER_EVENT = 2          # max candidates shown from the same event (e.g. temperature buckets)
+DEAD_SPREAD = 0.10         # spread >= this (10¢) is flagged DEAD BOOK in candidates: price shown is not tradeable
 
 # Skip high-frequency / bot-dominated or unresearchable stuff (case-insensitive substring match on question)
 EXCLUDE_KEYWORDS = [

@@ -15,11 +15,13 @@ python pm.py scan
 python pm.py scan                 # also runs hourly via Task Scheduler (below)
 python pm.py candidates           # ranked shortlist -> candidates.md
 python pm.py prompt <slug>        # paste prompts/<slug>.md into Gemini Deep Research
-python pm.py log --slug <slug> --outcome Yes --price 0.17 --stake 10 --prob 0.70 --ai-prob 0.75 --reason "tracking says 9M+"
+python pm.py forecast --slug <slug> --price 0.24 --prob 0.22 --ai-prob 0.34 --ai-base 0.23 --reason "skip: edge 2pt"
+python pm.py log --slug <slug> --outcome Yes --price 0.17 --stake 10 --prob 0.70 --ai-prob 0.75 --ai-base 0.60 --reason "tracking says 9M+"
 python pm.py resolve              # settles closed markets
 python pm.py stats                # hit rate, ROI, Brier: you vs AI vs market
 ```
-**Log every bet you take, including the AI's probability.** The stats are only as honest as the log.
+**Log every market you research**: `forecast` for skips, `log` for bets (`log` records the forecast too, so don't do both).
+Prices are the ask for the outcome your probability refers to. The stats are only as honest as the log.
 
 ## Run the scanner hourly (Windows)
 Task Scheduler → Create Basic Task → Daily → Action "Start a program":
