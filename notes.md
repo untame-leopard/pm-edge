@@ -5,3 +5,5 @@
 2026-10-29 | clayface 2nd wknd 12-14M | mkt 19¢ | AI 0.34 (own base 0.23) | me 0.22 | skip
 
 2026-10-29 | mrbeast 60M+ day1 | mkt ~15% | AI 0.28 (own base 0.08) | me 0.13 | skip
+
+2026-11-04 | cat-in-hat OW 20m+ | mkt Yes 17¢ | AI 0.28 (own base 0.80) | me ~0.32 | skip (edge ~6pt after shrinkage) | note: I nearly bet off stale long-range tracking; always use the final-week preview
