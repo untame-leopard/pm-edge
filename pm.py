@@ -235,6 +235,8 @@ def cmd_candidates(args):
         score += 1.0 * (1 - days / C.MAX_DAYS_TO_END)
         if any(k in q.lower() for k in C.PRIORITY_KEYWORDS):
             score += C.PRIORITY_BOOST
+        if r["spread"] is not None and r["spread"] >= C.DEAD_SPREAD:
+            score -= 2.0  # untradeable book: shown price is meaningless
         out.append(dict(score=score, slug=r["slug"], q=q, days=days, liq=liq, vol=vol,
                         move=move, cheap=cheap, age=age_days, event=r["event_title"] or r["slug"],
                         spread=r["spread"]))
