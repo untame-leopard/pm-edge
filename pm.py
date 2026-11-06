@@ -361,12 +361,17 @@ def cmd_forecast(args):
     print(f"Forecast logged (skip): {args.outcome} mkt {args.price*100:.0f}¢, your p={args.prob:.2f} (edge {edge:+.0f}pt)")
 
 
+def get_market(slug):
+    """Gamma hides closed markets unless closed=true is passed."""
+    data = get("/markets", {"slug": slug}) or get("/markets", {"slug": slug, "closed": "true"})
+    return data[0] if data else None
+
+
 def market_winner(slug):
     """Returns the winning outcome name, None if not resolved yet, or '?' if not found."""
-    data = get("/markets", {"slug": slug})
-    if not data:
+    m = get_market(slug)
+    if not m:
         return "?"
-    m = data[0]
     if not m.get("closed"):
         return None
     outcomes = jlist(m.get("outcomes"))
@@ -380,11 +385,10 @@ def cmd_resolve(_args):
     con = db()
     open_bets = con.execute("SELECT * FROM bets WHERE result IS NULL").fetchall()
     for b in open_bets:
-        data = get("/markets", {"slug": b["slug"]})
-        if not data:
+        m = get_market(b["slug"])
+        if not m:
             print(f"? {b['slug']}: not found")
             continue
-        m = data[0]
         if not m.get("closed"):
             continue
         outcomes = jlist(m.get("outcomes"))
