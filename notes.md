@@ -9,3 +9,5 @@
 2026-11-04 | cat-in-hat OW 20m+ | mkt Yes 17¢ | AI 0.28 (own base 0.80) | me ~0.32 | skip (edge ~6pt after shrinkage) | note: I nearly bet off stale long-range tracking; always use the final-week preview
 
 2026-11-04 | airbnb "take rate" Q3 call | mkt Yes 76¢ | AI 0.93 (base 13/14) | me 0.88 | skip (edge ~12pt) | Q3 2024 missed it, Q3 2025 not found
+
+2026-11-06 | RESOLVED airbnb "take rate" -> Yes. me 0.88, AI 0.93, mkt 0.76. Skip was edge-based; outcome alone says nothing
