@@ -11,3 +11,5 @@
 2026-11-04 | airbnb "take rate" Q3 call | mkt Yes 76¢ | AI 0.93 (base 13/14) | me 0.88 | skip (edge ~12pt) | Q3 2024 missed it, Q3 2025 not found
 
 2026-11-06 | RESOLVED airbnb "take rate" -> Yes. me 0.88, AI 0.93, mkt 0.76. Skip was edge-based; outcome alone says nothing
+
+2026-11-09 | RESOLVED cat-in-hat OW 20m+ -> No (~$18M). me 0.32, AI 0.28, mkt 0.17. Long-range tracking said 40-50M; release-week said 15-20M and was right
